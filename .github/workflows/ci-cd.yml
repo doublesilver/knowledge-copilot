@@ -65,7 +65,19 @@ jobs:
           node-version: 20
 
       - name: Install Vercel CLI
-        run: npm install -g vercel
+        run: npm install -g vercel@25.1.0
+
+      - name: Link Vercel project
+        working-directory: app
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_SCOPE: ${{ secrets.VERCEL_SCOPE }}
+        run: |
+          vercel link \
+            --project knowledge-copilot \
+            --scope "$VERCEL_SCOPE" \
+            --confirm \
+            --token "$VERCEL_TOKEN"
 
       - name: Deploy frontend (Vercel)
         working-directory: app
@@ -73,7 +85,23 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_SCOPE: ${{ secrets.VERCEL_SCOPE }}
         run: |
-          npx vercel@25.1.0 deploy --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" --name knowledge-copilot
+          attempt=1
+          max_attempts=3
+          while :; do
+            if vercel deploy --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE"; then
+              break
+            fi
+
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "Vercel deploy failed after ${max_attempts} attempt(s)."
+              exit 1
+            fi
+
+            sleep_seconds=$((attempt * 10))
+            echo "Vercel deploy failed. Retry ${attempt}/${max_attempts} in ${sleep_seconds}s..."
+            sleep "$sleep_seconds"
+            attempt=$((attempt + 1))
+          done
 
       - name: Setup Node.js for Railway CLI
         uses: actions/setup-node@v4
@@ -113,7 +141,19 @@ jobs:
           node-version: 20
 
       - name: Install Vercel CLI
-        run: npm install -g vercel
+        run: npm install -g vercel@25.1.0
+
+      - name: Link Vercel project
+        working-directory: app
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_SCOPE: ${{ secrets.VERCEL_SCOPE }}
+        run: |
+          vercel link \
+            --project knowledge-copilot \
+            --scope "$VERCEL_SCOPE" \
+            --confirm \
+            --token "$VERCEL_TOKEN"
 
       - name: Deploy frontend (Vercel)
         working-directory: app
@@ -121,7 +161,23 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_SCOPE: ${{ secrets.VERCEL_SCOPE }}
         run: |
-          npx vercel@25.1.0 deploy --prod --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" --name knowledge-copilot
+          attempt=1
+          max_attempts=3
+          while :; do
+            if vercel deploy --prod --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE"; then
+              break
+            fi
+
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "Vercel deploy failed after ${max_attempts} attempt(s)."
+              exit 1
+            fi
+
+            sleep_seconds=$((attempt * 10))
+            echo "Vercel deploy failed. Retry ${attempt}/${max_attempts} in ${sleep_seconds}s..."
+            sleep "$sleep_seconds"
+            attempt=$((attempt + 1))
+          done
 
       - name: Setup Node.js for Railway CLI
         uses: actions/setup-node@v4
