@@ -194,9 +194,10 @@ npm run build
 
 - `VERCEL_TOKEN`
 - `VERCEL_SCOPE`
-- `RAILWAY_TOKEN`
-- `RAILWAY_SERVICE_NAME`
-- `RAILWAY_DEV_ENVIRONMENT`
+- `RAILWAY_DEV_DEPLOY_HOOK`
+- `RAILWAY_PROD_DEPLOY_HOOK`
+
+Railway 배포는 더 이상 `RAILWAY_TOKEN`을 사용하지 않고, GitHub Actions에서 각 환경별 Deploy Hook URL을 호출해 배포를 트리거합니다.
 
 ---
 

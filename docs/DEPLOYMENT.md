@@ -49,7 +49,7 @@ bash ./scripts/check-deploy-env.sh
 - Vercel Web
 - `NEXT_PUBLIC_API_BASE`
 - 로컬 토큰 관리
-  - `VERCEL_TOKEN`, `RAILWAY_TOKEN`, `GITHUB_TOKEN` (로컬 용도)
+  - `VERCEL_TOKEN`, `GITHUB_TOKEN` (로컬 용도)
 
 ## Git 기반 자동 배포 흐름
 
@@ -67,15 +67,15 @@ bash ./scripts/check-deploy-env.sh
 ### 필요한 GitHub Actions 시크릿
 - `VERCEL_TOKEN`
 - `VERCEL_SCOPE` (`doublesilvers-projects`)
-- `RAILWAY_TOKEN`
-- `RAILWAY_SERVICE_NAME`
-- `RAILWAY_DEV_ENVIRONMENT`
+- `RAILWAY_DEV_DEPLOY_HOOK`
+- `RAILWAY_PROD_DEPLOY_HOOK`
 
 현재 저장소 기준으로 확정된 값
 - `VERCEL_SCOPE=doublesilvers-projects`
-- `RAILWAY_SERVICE_NAME=knowledge-copilot-api`
-- `RAILWAY_DEV_ENVIRONMENT=development`
-- `RAILWAY_TOKEN`은 유효한 CLI 토큰으로 교체 필요
+
+Railway 배포는 더 이상 CLI 토큰(`RAILWAY_TOKEN`)을 사용하지 않고, GitHub Actions에서 각 환경별 **Deploy Hook URL**(`RAILWAY_DEV_DEPLOY_HOOK`, `RAILWAY_PROD_DEPLOY_HOOK`)을 POST 호출해 트리거합니다.
+
+참고: Deploy Hook URL은 Railway 프로젝트 Settings → Deployments → Deployment Hooks 에서 발급합니다.
 
 ## 운영 주의
 
