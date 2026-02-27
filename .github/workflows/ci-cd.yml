@@ -6,6 +6,11 @@ on:
       - main
       - dev
       - development
+  pull_request:
+    branches:
+      - main
+      - dev
+      - development
 
 jobs:
   checks:
@@ -54,34 +59,53 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy frontend (Vercel)
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./app
-
-      - name: Setup Node.js for Railway CLI
+      - name: Setup Node.js for Vercel CLI
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
+      - name: Install Vercel CLI
+        run: npm install -g vercel@25.1.0
 
-      - name: Deploy API (Railway)
+      - name: Link Vercel project
+        working-directory: app
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        working-directory: api
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_SCOPE: ${{ secrets.VERCEL_SCOPE }}
         run: |
-          if [ -z "${{ secrets.RAILWAY_DEV_ENVIRONMENT }}" ]; then
-            echo "RAILWAY_DEV_ENVIRONMENT secret not configured." >&2
-            exit 1
-          fi
-          railway up --service "${{ secrets.RAILWAY_SERVICE_NAME }}" \
-            --environment "${{ secrets.RAILWAY_DEV_ENVIRONMENT }}" \
-            --ci --detach
+          vercel link \
+            --project app \
+            --scope "$VERCEL_SCOPE" \
+            --confirm \
+            --token "$VERCEL_TOKEN"
+
+      - name: Deploy frontend (Vercel)
+        working-directory: app
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_SCOPE: ${{ secrets.VERCEL_SCOPE }}
+        run: |
+          attempt=1
+          max_attempts=3
+          while :; do
+            if vercel deploy --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE"; then
+              break
+            fi
+
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "Vercel deploy failed after ${max_attempts} attempt(s)."
+              exit 1
+            fi
+
+            sleep_seconds=$((attempt * 10))
+            echo "Vercel deploy failed. Retry ${attempt}/${max_attempts} in ${sleep_seconds}s..."
+            sleep "$sleep_seconds"
+            attempt=$((attempt + 1))
+          done
+
+      # Railway: auto-deploys from dev branch via GitHub integration.
+      # No CLI or deploy hook needed — Railway watches this branch
+      # and waits for CI checks to pass ("Check Suites" enabled).
 
   deploy-production:
     if: github.ref == 'refs/heads/main'
@@ -94,28 +118,50 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy frontend (Vercel)
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./app
-          vercel-args: "--prod --confirm"
-
-      - name: Setup Node.js for Railway CLI
+      - name: Setup Node.js for Vercel CLI
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
+      - name: Install Vercel CLI
+        run: npm install -g vercel@25.1.0
 
-      - name: Deploy API (Railway)
+      - name: Link Vercel project
+        working-directory: app
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        working-directory: api
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_SCOPE: ${{ secrets.VERCEL_SCOPE }}
         run: |
-          railway up --service "${{ secrets.RAILWAY_SERVICE_NAME }}" \
-            --environment production \
-            --ci --detach
+          vercel link \
+            --project app \
+            --scope "$VERCEL_SCOPE" \
+            --confirm \
+            --token "$VERCEL_TOKEN"
+
+      - name: Deploy frontend (Vercel)
+        working-directory: app
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_SCOPE: ${{ secrets.VERCEL_SCOPE }}
+        run: |
+          attempt=1
+          max_attempts=3
+          while :; do
+            if vercel deploy --prod --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE"; then
+              break
+            fi
+
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "Vercel deploy failed after ${max_attempts} attempt(s)."
+              exit 1
+            fi
+
+            sleep_seconds=$((attempt * 10))
+            echo "Vercel deploy failed. Retry ${attempt}/${max_attempts} in ${sleep_seconds}s..."
+            sleep "$sleep_seconds"
+            attempt=$((attempt + 1))
+          done
+
+      # Railway: auto-deploys from main branch via GitHub integration.
+      # No CLI or deploy hook needed — Railway watches this branch
+      # and waits for CI checks to pass ("Check Suites" enabled).

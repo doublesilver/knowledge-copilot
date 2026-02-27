@@ -20,6 +20,7 @@
 2. 환경변수 설정
 - `NEXT_PUBLIC_API_BASE=https://<your-railway-domain>`
 3. Vercel에서는 `app/.env.local`이 아니라, **Project Settings의 Environment Variables**에 등록해야 합니다.
+4. 본 레포지토리는 프론트 프로젝트 루트가 `app/`이므로, Vercel 프로젝트 Root Directory를 `app`으로 설정해야 합니다.
 
 ## Local dev
 
@@ -48,7 +49,7 @@ bash ./scripts/check-deploy-env.sh
 - Vercel Web
 - `NEXT_PUBLIC_API_BASE`
 - 로컬 토큰 관리
-  - `VERCEL_TOKEN`, `RAILWAY_TOKEN`, `GITHUB_TOKEN` (로컬 용도)
+  - `VERCEL_TOKEN`, `GITHUB_TOKEN` (로컬 용도)
 
 ## Git 기반 자동 배포 흐름
 
@@ -65,11 +66,16 @@ bash ./scripts/check-deploy-env.sh
 
 ### 필요한 GitHub Actions 시크릿
 - `VERCEL_TOKEN`
-- `VERCEL_ORG_ID`
-- `VERCEL_PROJECT_ID`
-- `RAILWAY_TOKEN`
-- `RAILWAY_SERVICE_NAME`
-- `RAILWAY_DEV_ENVIRONMENT`
+- `VERCEL_SCOPE` (`doublesilvers-projects`)
+- `RAILWAY_DEV_DEPLOY_HOOK`
+- `RAILWAY_PROD_DEPLOY_HOOK`
+
+현재 저장소 기준으로 확정된 값
+- `VERCEL_SCOPE=doublesilvers-projects`
+
+Railway 배포는 더 이상 CLI 토큰(`RAILWAY_TOKEN`)을 사용하지 않고, GitHub Actions에서 각 환경별 **Deploy Hook URL**(`RAILWAY_DEV_DEPLOY_HOOK`, `RAILWAY_PROD_DEPLOY_HOOK`)을 POST 호출해 트리거합니다.
+
+참고: Deploy Hook URL은 Railway 프로젝트 Settings → Deployments → Deployment Hooks 에서 발급합니다.
 
 ## 운영 주의
 

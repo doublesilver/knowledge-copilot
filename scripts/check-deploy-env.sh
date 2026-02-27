@@ -51,7 +51,6 @@ require_var NEXT_PUBLIC_API_BASE
 echo
 echo "== Deployment tooling tokens (local) =="
 warn_var VERCEL_TOKEN
-warn_var RAILWAY_TOKEN
 warn_var GITHUB_TOKEN
 
 if [ "$failures" -ne 0 ]; then
