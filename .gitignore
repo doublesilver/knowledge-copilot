@@ -1,0 +1,14 @@
+api/.venv/
+api/__pycache__/
+api/.ruff_cache/
+api/.pytest_cache/
+api/data/knowledge_copilot.db
+api/.env
+api/data/*.db
+app/.next/
+app/node_modules/
+app/.env.local
+.env
+__pycache__/
+*.pyc
+*.pyo
