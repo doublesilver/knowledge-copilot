@@ -20,6 +20,7 @@
 2. 환경변수 설정
 - `NEXT_PUBLIC_API_BASE=https://<your-railway-domain>`
 3. Vercel에서는 `app/.env.local`이 아니라, **Project Settings의 Environment Variables**에 등록해야 합니다.
+4. 본 레포지토리는 프론트 프로젝트 루트가 `app/`이므로, Vercel 프로젝트 Root Directory를 `app`으로 설정해야 합니다.
 
 ## Local dev
 
@@ -70,6 +71,13 @@ bash ./scripts/check-deploy-env.sh
 - `RAILWAY_TOKEN`
 - `RAILWAY_SERVICE_NAME`
 - `RAILWAY_DEV_ENVIRONMENT`
+
+현재 저장소 기준으로 확정된 값
+- `VERCEL_ORG_ID=team_zsn95o3nyKEFVKDSg7tPFn3f`
+- `VERCEL_PROJECT_ID=prj_nnesdRii3GLrSJOehkoRKmLnV0U5`
+- `RAILWAY_SERVICE_NAME=knowledge-copilot-api`
+- `RAILWAY_DEV_ENVIRONMENT=development`
+- `RAILWAY_TOKEN`은 유효한 CLI 토큰으로 교체 필요
 
 ## 운영 주의
 

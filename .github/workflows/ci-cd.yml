@@ -6,6 +6,11 @@ on:
       - main
       - dev
       - development
+  pull_request:
+    branches:
+      - main
+      - dev
+      - development
 
 jobs:
   checks:
