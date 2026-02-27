@@ -6,6 +6,7 @@ api/data/knowledge_copilot.db
 api/.env
 api/data/*.db
 app/.next/
+app/.vercel/
 app/node_modules/
 app/.env.local
 .env
