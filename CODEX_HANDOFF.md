@@ -1,124 +1,100 @@
-# Codex Handoff: Railway Auto-Deploy 검증 및 후속 작업
+# Codex CLI Handoff: Railway Auto-Deploy 검증 및 후속 작업
 
-## 현재 상태
-- **PR**: https://github.com/doublesilver/knowledge-copilot/pull/8
-- **브랜치**: `chore/railway-auto-deploy` (base: `main`)
-- **변경 내용**: Railway deploy hook/CLI 스텝 제거, GitHub Auto-deploy 전략으로 전환
-- **삭제된 시크릿**: `RAILWAY_TOKEN`, `RAILWAY_SERVICE_NAME`, `RAILWAY_DEV_ENVIRONMENT`
-- **남은 시크릿**: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `VERCEL_SCOPE`
-
-## 아키텍처
-```
-doublesilver/knowledge-copilot
-├── app/          # Next.js frontend → Vercel (GitHub Actions에서 배포)
-├── api/          # Python FastAPI backend → Railway (auto-deploy)
-└── .github/workflows/ci-cd.yml
-```
-
-### 배포 플로우 (변경 후)
-```
-push to dev/main
-  → GitHub Actions: checks job (FE build + BE test)
-  → GitHub Actions: Vercel deploy (FE)
-  → Railway: auto-deploy (BE) — CI 통과 후 자동 (Check Suites)
-```
+> **사용법**: 아래 프롬프트를 Codex CLI에서 그대로 붙여넣기
+>
+> ```bash
+> cd /path/to/knowledge-copilot   # 또는 git clone 후 진입
+> codex                            # Codex CLI 실행
+> # 아래 프롬프트 붙여넣기
+> ```
 
 ---
 
-## Codex 프롬프트 (복사해서 사용)
+## Codex CLI 프롬프트
 
 ```
-너는 doublesilver/knowledge-copilot 프로젝트의 CI/CD 파이프라인을 검증하고 후속 작업을 수행해야 한다.
+레포 doublesilver/knowledge-copilot의 CI/CD 파이프라인 검증 및 후속 작업을 수행해.
+이 레포의 CODEX_HANDOFF.md에 전체 컨텍스트가 있으니 먼저 읽어.
 
-## 배경
-- PR #8 (chore/railway-auto-deploy)에서 Railway deploy hook 스텝을 제거하고
-  Railway의 GitHub Auto-deploy + Check Suites 방식으로 전환함
-- Railway에는 "Deploy Hook URL" 기능이 존재하지 않음 (feature request 상태)
-- GitHub Actions는 CI 검증 + Vercel 배포만 담당, Railway 배포는 Railway가 자체 처리
+## 컨텍스트 (빠른 요약)
+- PR #8 (chore/railway-auto-deploy): Railway deploy hook/CLI 스텝 제거, Auto-deploy 전환
+- Railway에 "Deploy Hook URL" 기능이 없어서, Railway의 GitHub Auto-deploy + Check Suites 사용
+- GitHub Actions는 CI + Vercel 배포만 담당. Railway는 CI 통과 감지 후 자체 auto-deploy
+- 프로젝트 구조: app/ (Next.js→Vercel), api/ (FastAPI→Railway)
+- 삭제된 시크릿: RAILWAY_TOKEN, RAILWAY_SERVICE_NAME, RAILWAY_DEV_ENVIRONMENT
+- 남은 시크릿: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID, VERCEL_SCOPE
 
-## 검증 체크리스트
+## Step 1: 검증 (순서대로 실행)
 
-### 1. PR 상태 확인
-gh pr view 8 --repo doublesilver/knowledge-copilot
-- CI checks가 통과했는지 확인
-- 실패 시 로그를 분석하고 수정
+1-1. PR #8 CI 상태 확인
+  gh pr view 8 --repo doublesilver/knowledge-copilot
+  gh pr checks 8 --repo doublesilver/knowledge-copilot
+  → CI 실패 시: gh run view <run-id> --log-failed 로 원인 분석하고 수정 커밋
 
-### 2. GitHub secrets 확인
-gh secret list --repo doublesilver/knowledge-copilot
-- RAILWAY_* 시크릿이 없어야 함 (이미 삭제됨)
-- Vercel 시크릿 4개만 존재해야 함: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID, VERCEL_SCOPE
+1-2. 시크릿 확인
+  gh secret list --repo doublesilver/knowledge-copilot
+  → RAILWAY_* 시크릿이 0개여야 정상
+  → VERCEL_* 시크릿 4개만 존재해야 함
 
-### 3. 워크플로우 문법 검증
-.github/workflows/ci-cd.yml 파일을 읽고:
-- YAML 문법 오류 없는지 확인
-- checks → deploy-development / deploy-production 의존 관계 정상인지 확인
-- Railway 관련 스텝이 완전히 제거되었는지 확인 (curl, railway CLI 호출 없어야 함)
-- Vercel 배포 스텝이 정상 동작할 수 있는지 확인
+1-3. 워크플로우 검증
+  .github/workflows/ci-cd.yml 파일을 읽고:
+  - railway, RAILWAY, deploy hook, curl.*railway 같은 Railway 관련 코드가 완전히 제거되었는지 grep
+  - checks → deploy-development / deploy-production 의존관계(needs: checks) 정상인지 확인
+  - Vercel 배포 스텝에 필요한 시크릿(VERCEL_TOKEN, VERCEL_SCOPE)이 참조되는지 확인
 
-### 4. Railway 대시보드 설정 안내 (자동화 불가, 수동 필요)
-사용자에게 아래 Railway 대시보드 설정을 안내:
+## Step 2: PR 머지 (검증 통과 시)
 
-a) railway.com → knowledge-copilot 프로젝트 → API 서비스 클릭
-b) Settings → Source 섹션:
-   - Connect Repo: doublesilver/knowledge-copilot
-   - Root Directory: /api
-c) Development 환경:
-   - Branch: dev
-   - Check Suites: ON (활성화)
-d) Production 환경:
-   - Branch: main
-   - Check Suites: ON (활성화)
+  gh pr merge 8 --repo doublesilver/knowledge-copilot --squash --delete-branch
 
-### 5. PR 머지 판단
-- CI 통과 + 검증 완료 시 PR 머지 추천 여부를 판단
-- 머지 후 main에서 Railway auto-deploy가 트리거되는지 확인
+## Step 3: dev 브랜치 동기화
 
-## 후속 작업 (선택)
+  git checkout main && git pull origin main
+  git checkout dev && git merge main && git push origin dev
 
-### A. dev 브랜치 동기화
-PR이 main에 머지된 후:
-git checkout dev && git merge main && git push origin dev
-→ dev 환경도 auto-deploy 트리거됨
+## Step 4: 기존 불필요 브랜치 정리
 
-### B. 기존 deploy hook 브랜치 정리
-chore/railway-no-token-deploy 브랜치 삭제:
-gh api repos/doublesilver/knowledge-copilot/git/refs/heads/chore/railway-no-token-deploy -X DELETE
-gh api repos/doublesilver/knowledge-copilot/git/refs/heads/chore/refresh-secrets -X DELETE
-gh api repos/doublesilver/knowledge-copilot/git/refs/heads/chore/fix-vercel-deploy -X DELETE
-gh api repos/doublesilver/knowledge-copilot/git/refs/heads/chore/fix-vercel-deploy-flags -X DELETE
+아래 브랜치들을 리모트에서 삭제:
+  git push origin --delete chore/railway-no-token-deploy 2>/dev/null || true
+  git push origin --delete chore/refresh-secrets 2>/dev/null || true
+  git push origin --delete chore/fix-vercel-deploy 2>/dev/null || true
+  git push origin --delete chore/fix-vercel-deploy-flags 2>/dev/null || true
 
-### C. E2E 배포 검증
-dev 브랜치에 테스트 커밋을 push하고:
-1. GitHub Actions CI가 통과하는지 확인
-2. Railway가 자동 배포하는지 확인 (Railway 대시보드에서 deployment 상태 확인)
-3. API health check: curl https://<railway-url>/api/v1/health
+## Step 5: 배포 문서 업데이트
 
-### D. README 업데이트
-배포 방식 변경을 README나 docs/DEPLOY_VERCEL_RAILWAY.md에 반영:
-- "Railway CLI 배포" → "Railway Auto-deploy (Check Suites)"
+docs/DEPLOY_VERCEL_RAILWAY.md 파일이 있으면 아래 내용 반영:
+- "Railway CLI 배포" 또는 "railway up" 관련 설명 → "Railway Auto-deploy (Check Suites)" 로 변경
 - RAILWAY_TOKEN 관련 설명 제거
-- 새 배포 플로우 다이어그램 추가
+- 배포 플로우를 아래로 업데이트:
+  push → GitHub Actions CI → Vercel deploy (FE) + Railway auto-deploy (BE, CI 통과 후)
+- 변경 시 커밋: git add docs/ && git commit -m "docs: update deploy guide for Railway auto-deploy"
+- git push origin dev
+
+## Step 6: E2E 배포 검증
+
+dev 브랜치에서 테스트:
+1. gh run list --repo doublesilver/knowledge-copilot --branch dev --limit 3
+   → 최근 CI가 통과했는지 확인
+2. Railway 대시보드에서 dev 환경 배포 상태 확인 (자동화 불가, 사용자에게 안내)
+3. API health check URL이 있으면 curl로 확인
+
+## 수동 작업 안내 (사용자에게 출력)
+
+아래는 Codex가 자동화할 수 없는 Railway 대시보드 설정이야.
+사용자에게 아래 체크리스트를 출력해:
+
+```
+Railway 대시보드 수동 설정 체크리스트:
+[ ] railway.com → knowledge-copilot 프로젝트 → API 서비스 → Settings
+[ ] Source → Connect Repo: doublesilver/knowledge-copilot, Root: /api
+[ ] Development 환경 → Branch: dev, Check Suites: ON
+[ ] Production 환경 → Branch: main, Check Suites: ON
+[ ] Railway GitHub App이 레포에 설치되어 있는지 확인
+    (GitHub → Settings → Integrations → Railway 확인)
+```
 
 ## 주의사항
-- Railway 대시보드 설정(Check Suites 활성화)은 CLI/API로 자동화 불가 — 반드시 수동
-- Vercel 배포는 기존과 동일하게 GitHub Actions에서 처리
-- Railway auto-deploy는 GitHub push webhook을 기반으로 작동하므로
-  Railway GitHub App이 레포에 설치되어 있어야 함
-```
-
----
-
-## 빠른 검증 명령어
-```bash
-# PR 상태
-gh pr view 8 --repo doublesilver/knowledge-copilot
-
-# CI 실행 상태
-gh run list --repo doublesilver/knowledge-copilot --limit 5
-
-# 시크릿 확인
-gh secret list --repo doublesilver/knowledge-copilot
-
-# 워크플로우 문법 검증 (act 사용 시)
-act -n --workflows .github/workflows/ci-cd.yml
+- Railway 대시보드 설정(Check Suites)은 API/CLI로 자동화 불가. 반드시 수동
+- PR 머지 전에 CI가 통과했는지 반드시 확인
+- dev 브랜치 동기화 전에 main이 최신인지 확인
+- CODEX_HANDOFF.md 파일은 모든 작업 완료 후 삭제해도 됨
 ```
