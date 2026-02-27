@@ -73,7 +73,7 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_SCOPE: ${{ secrets.VERCEL_SCOPE }}
         run: |
-          npx vercel@25.1.0 deploy --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" --name knowledge-copilot
+          npx vercel@25.1.0 deploy --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" --name knowledge-copilot
 
       - name: Setup Node.js for Railway CLI
         uses: actions/setup-node@v4
@@ -121,7 +121,7 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_SCOPE: ${{ secrets.VERCEL_SCOPE }}
         run: |
-          npx vercel@25.1.0 deploy --yes --prod --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" --name knowledge-copilot
+          npx vercel@25.1.0 deploy --prod --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" --name knowledge-copilot
 
       - name: Setup Node.js for Railway CLI
         uses: actions/setup-node@v4
