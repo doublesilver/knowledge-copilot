@@ -63,8 +63,7 @@ docker compose up --build
 ### GitHub Actions 설정 항목
 `Settings > Secrets and variables > Actions`에 아래 값이 있어야 합니다.
 - `VERCEL_TOKEN`
-- `VERCEL_ORG_ID`
-- `VERCEL_PROJECT_ID`
+- `VERCEL_SCOPE`
 - `RAILWAY_TOKEN`
 - `RAILWAY_SERVICE_NAME`
 - `RAILWAY_DEV_ENVIRONMENT`
