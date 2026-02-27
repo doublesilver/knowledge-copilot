@@ -46,9 +46,30 @@ bash ./scripts/check-deploy-env.sh
 - Railway API
   - `OPENAI_EMBEDDING_MODEL`, `OPENAI_CHAT_MODEL`, `OPENAI_REQUEST_TIMEOUT`, `CORS_ORIGINS`
 - Vercel Web
-  - `NEXT_PUBLIC_API_BASE`
+- `NEXT_PUBLIC_API_BASE`
 - 로컬 토큰 관리
   - `VERCEL_TOKEN`, `RAILWAY_TOKEN`, `GITHUB_TOKEN` (로컬 용도)
+
+## Git 기반 자동 배포 흐름
+
+1. 코드 수정 후 commit
+2. 브랜치 전략에 따라 push
+- `dev`/`development` → 자동 개발 배포
+- `main` → 자동 실운영 배포
+3. 실운영 배포는 개발 배포가 통과된 커밋 기준으로 운영 브랜치에 반영 후 진행
+
+`.github/workflows/ci-cd.yml`가 다음을 수행합니다.
+- `app/` frontend build 점검
+- `api/` backend 테스트 실행
+- 브랜치별 자동 배포(Vercel + Railway)
+
+### 필요한 GitHub Actions 시크릿
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+- `RAILWAY_TOKEN`
+- `RAILWAY_SERVICE_NAME`
+- `RAILWAY_DEV_ENVIRONMENT`
 
 ## 운영 주의
 

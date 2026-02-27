@@ -47,6 +47,33 @@ npm run dev
 docker compose up --build
 ```
 
+## 배포 플로우 (Git 기준)
+
+### 브랜치 전략
+- `dev` 또는 `development`: 개발/스테이징 배포 대상
+- `main`: 실운영(Production) 배포 대상
+
+### 배포 규칙
+1. 로컬에서 코드 수정
+2. `git add`, `git commit`, `git push`  
+   - `dev` 브랜치에 push → 자동으로 **개발 배포** 실행
+   - `main` 브랜치에 push → 자동으로 **실운영 배포** 실행
+3. 실운영 배포는 개발 배포가 통과한 커밋만 머지 전제(`main` 머지/리뷰 정책을 이용)
+
+### GitHub Actions 설정 항목
+`Settings > Secrets and variables > Actions`에 아래 값이 있어야 합니다.
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+- `RAILWAY_TOKEN`
+- `RAILWAY_SERVICE_NAME`
+- `RAILWAY_DEV_ENVIRONMENT`
+
+### Vercel/배포 환경 대응
+- Vercel은 기본적으로 브랜치별 Preview/Production 라우팅을 사용하도록 `.github/workflows/ci-cd.yml`에서 분기 처리
+- Railway는 환경명을 `production` / `development`로 나눠 배포하도록 구성
+- 배포 시점은 GitHub Push 이벤트 기준으로 자동 실행
+
 ## API
 - `POST /api/v1/documents`: 문서 업로드
 - `GET /api/v1/documents`: 문서 목록
