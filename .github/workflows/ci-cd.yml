@@ -103,15 +103,9 @@ jobs:
             attempt=$((attempt + 1))
           done
 
-      - name: Trigger API deployment (Railway)
-        env:
-          RAILWAY_DEPLOY_HOOK: ${{ secrets.RAILWAY_DEV_DEPLOY_HOOK }}
-        run: |
-          if [ -z "$RAILWAY_DEPLOY_HOOK" ]; then
-            echo "RAILWAY_DEV_DEPLOY_HOOK secret is not configured." >&2
-            exit 1
-          fi
-          curl -fsSL -X POST "$RAILWAY_DEPLOY_HOOK"
+      # Railway: auto-deploys from dev branch via GitHub integration.
+      # No CLI or deploy hook needed — Railway watches this branch
+      # and waits for CI checks to pass ("Check Suites" enabled).
 
   deploy-production:
     if: github.ref == 'refs/heads/main'
@@ -168,12 +162,6 @@ jobs:
             attempt=$((attempt + 1))
           done
 
-      - name: Trigger API deployment (Railway)
-        env:
-          RAILWAY_DEPLOY_HOOK: ${{ secrets.RAILWAY_PROD_DEPLOY_HOOK }}
-        run: |
-          if [ -z "$RAILWAY_DEPLOY_HOOK" ]; then
-            echo "RAILWAY_PROD_DEPLOY_HOOK secret is not configured." >&2
-            exit 1
-          fi
-          curl -fsSL -X POST "$RAILWAY_DEPLOY_HOOK"
+      # Railway: auto-deploys from main branch via GitHub integration.
+      # No CLI or deploy hook needed — Railway watches this branch
+      # and waits for CI checks to pass ("Check Suites" enabled).
