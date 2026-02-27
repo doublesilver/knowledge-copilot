@@ -71,6 +71,13 @@ bash ./scripts/check-deploy-env.sh
 - `RAILWAY_SERVICE_NAME`
 - `RAILWAY_DEV_ENVIRONMENT`
 
+현재 저장소 기준으로 확정된 값
+- `VERCEL_ORG_ID=team_zsn95o3nyKEFVKDSg7tPFn3f`
+- `VERCEL_PROJECT_ID=prj_nnesdRii3GLrSJOehkoRKmLnV0U5`
+- `RAILWAY_SERVICE_NAME=knowledge-copilot-api`
+- `RAILWAY_DEV_ENVIRONMENT=development`
+- `RAILWAY_TOKEN`은 유효한 CLI 토큰으로 교체 필요
+
 ## 운영 주의
 
 - 이번 백엔드는 기본적으로 SQLite를 사용하므로 파일 DB가 컨테이너/빌드 재시작 시 초기화될 수 있습니다.
