@@ -88,7 +88,8 @@ jobs:
           attempt=1
           max_attempts=3
           while :; do
-            if vercel deploy --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE"; then
+            if vercel deploy --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" \
+              -e NEXT_PUBLIC_API_BASE="${{ secrets.NEXT_PUBLIC_API_BASE_DEV }}"; then
               break
             fi
 
@@ -147,7 +148,8 @@ jobs:
           attempt=1
           max_attempts=3
           while :; do
-            if vercel deploy --prod --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE"; then
+            if vercel deploy --prod --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" \
+              -e NEXT_PUBLIC_API_BASE="${{ secrets.NEXT_PUBLIC_API_BASE_PROD }}"; then
               break
             fi
 
