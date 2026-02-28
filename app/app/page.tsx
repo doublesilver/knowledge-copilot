@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { ENDPOINT } from "./lib";
+import { ENDPOINT, fetchApi, ApiError } from "./lib";
 
 type DocumentItem = {
   id: string;
@@ -36,6 +36,13 @@ type Metric = {
   avg_feedback_rating: number | null;
 };
 
+function errorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    return `서버 오류 (${error.status})`;
+  }
+  return "네트워크 오류가 발생했습니다. 잠시 후 다시 시도하세요.";
+}
+
 export default function HomePage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [metrics, setMetrics] = useState<Metric | null>(null);
@@ -53,12 +60,10 @@ export default function HomePage() {
 
   async function refreshAll() {
     try {
-      const [docsRes, metricsRes] = await Promise.all([
-        fetch(`${ENDPOINT.documents}?project_id=${projectId}`),
-        fetch(`${ENDPOINT.metrics}?project_id=${projectId}`),
+      const [docs, metricPayload] = await Promise.all([
+        fetchApi<DocumentItem[]>(`${ENDPOINT.documents}?project_id=${projectId}`),
+        fetchApi<Metric>(`${ENDPOINT.metrics}?project_id=${projectId}`),
       ]);
-      const docs = await docsRes.json();
-      const metricPayload = await metricsRes.json();
       setDocuments(docs);
       setMetrics(metricPayload);
     } catch {
@@ -79,18 +84,12 @@ export default function HomePage() {
     form.set("source_text", sourceText);
 
     try {
-      const response = await fetch(ENDPOINT.documents, {
-        method: "POST",
-        body: form,
-      });
-      if (!response.ok) {
-        throw new Error("upload failed");
-      }
+      await fetchApi(ENDPOINT.documents, { method: "POST", body: form });
       setSourceText("");
       setMessage("문서 업로드 완료");
       await refreshAll();
-    } catch {
-      setMessage("문서 업로드 실패");
+    } catch (error) {
+      setMessage(errorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -106,26 +105,16 @@ export default function HomePage() {
     setLoading(true);
 
     try {
-      const response = await fetch(ENDPOINT.queries, {
+      const payload = await fetchApi<QueryResponse>(ENDPOINT.queries, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          project_id: projectId,
-          question,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: projectId, question }),
       });
-      if (!response.ok) {
-        setMessage("질의 처리 실패");
-        return;
-      }
-      const payload: QueryResponse = await response.json();
       setQueryResult(payload);
       setQuestion("");
       await refreshAll();
-    } catch {
-      setMessage("네트워크 오류가 발생했습니다. 잠시 후 다시 시도하세요.");
+    } catch (error) {
+      setMessage(errorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -136,27 +125,18 @@ export default function HomePage() {
     setActionResult("");
 
     try {
-      const response = await fetch(ENDPOINT.actions, {
+      const payload = await fetchApi<{ result: string }>(ENDPOINT.actions, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           project_id: projectId,
           type: "summary",
-          payload: {
-            documents: documents.map((doc) => doc.id),
-          },
+          payload: { documents: documents.map((doc) => doc.id) },
         }),
       });
-      if (!response.ok) {
-        setActionResult("액션 실행 실패");
-        return;
-      }
-      const payload = await response.json();
       setActionResult(payload.result);
-    } catch {
-      setActionResult("네트워크 오류가 발생했습니다. 잠시 후 다시 시도하세요.");
+    } catch (error) {
+      setActionResult(errorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -223,10 +203,20 @@ export default function HomePage() {
         <section className="card" aria-labelledby="result-heading">
           <h2 id="result-heading">질의 응답</h2>
           <p>{queryResult.answer}</p>
-          <p>
-            모델: {queryResult.model} / 지연: {queryResult.latency_ms}ms
-          </p>
-          <pre>{queryResult.citations.map((c) => `- [${c.document_id}] ${c.text}`).join("\n")}</pre>
+          <dl className="meta">
+            <dt>모델</dt>
+            <dd>{queryResult.model}</dd>
+            <dt>지연</dt>
+            <dd>{queryResult.latency_ms}ms</dd>
+          </dl>
+          <h3>인용</h3>
+          <ol className="citations">
+            {queryResult.citations.map((c) => (
+              <li key={c.chunk_id}>
+                <strong>{c.document_id}</strong> {c.text}
+              </li>
+            ))}
+          </ol>
         </section>
       ) : null}
 
@@ -241,9 +231,20 @@ export default function HomePage() {
       <section className="card" aria-labelledby="metrics-heading">
         <h2 id="metrics-heading">4) 문서/메트릭</h2>
         {metrics ? (
-          <pre>
-{`문서: ${metrics.documents}\n청크: ${metrics.chunks}\n질의: ${metrics.queries}\n평균 응답: ${metrics.avg_query_latency_ms}ms\n피드백: ${metrics.feedback_count}건 / 평점 ${metrics.avg_feedback_rating ?? "N/A"}`}
-          </pre>
+          <dl className="meta">
+            <dt>문서</dt>
+            <dd>{metrics.documents}</dd>
+            <dt>청크</dt>
+            <dd>{metrics.chunks}</dd>
+            <dt>질의</dt>
+            <dd>{metrics.queries}</dd>
+            <dt>평균 응답</dt>
+            <dd>{metrics.avg_query_latency_ms}ms</dd>
+            <dt>피드백</dt>
+            <dd>{metrics.feedback_count}건</dd>
+            <dt>평점</dt>
+            <dd>{metrics.avg_feedback_rating ?? "N/A"}</dd>
+          </dl>
         ) : null}
         <ul>
           {documents.map((doc) => (

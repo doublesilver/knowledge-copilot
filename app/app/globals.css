@@ -101,3 +101,29 @@ pre {
   padding: 0.75rem 1rem;
   margin-top: 1rem;
 }
+
+.meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.meta dt {
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.meta dd {
+  margin: 0;
+}
+
+.citations {
+  padding-left: 1.25rem;
+  margin: 0.5rem 0;
+}
+
+.citations li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
