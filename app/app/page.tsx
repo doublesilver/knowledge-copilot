@@ -69,7 +69,12 @@ export default function HomePage() {
   const sourceRef = useRef<HTMLTextAreaElement>(null);
   const questionRef = useRef<HTMLTextAreaElement>(null);
 
+  const [apiOnline, setApiOnline] = useState(true);
+
   useEffect(() => {
+    fetch(ENDPOINT.health)
+      .then((res) => setApiOnline(res.ok))
+      .catch(() => setApiOnline(false));
     void refreshAll();
   }, []);
 
@@ -166,6 +171,11 @@ export default function HomePage() {
 
   return (
     <main>
+      {!apiOnline && (
+        <p className="banner-offline" role="alert">
+          API 서버에 연결할 수 없습니다. 일부 기능이 제한됩니다.
+        </p>
+      )}
       <h1 id="title">Knowledge Copilot</h1>
       <p className="subtitle">RAG, 액션형 AI, API 로그 추적까지 포함한 포트폴리오 프로젝트</p>
 
