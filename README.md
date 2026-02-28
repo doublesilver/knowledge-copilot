@@ -46,22 +46,22 @@
 
 ```mermaid
 flowchart LR
-    subgraph Frontend[Frontend (Vercel)]
+    subgraph Frontend["Frontend (Vercel)"]
         N[Next.js 14.2.15]
         React[React 18.3.1]
         TypeScript[TypeScript 5.5.4]
     end
 
-    subgraph Backend[Backend (Railway)]
+    subgraph Backend["Backend (Railway)"]
         FastAPI[FastAPI 0.112.0]
         PyEnv[Python 3.12]
         Uvicorn[Uvicorn 0.30.6]
-        SQLite[SQLite (파일 DB)]
+        SQLite["SQLite (파일 DB)"]
     end
 
     User[브라우저] --> N --> FastAPI
     FastAPI --> SQLite
-    FastAPI --> OpenAI[Embedding/Chat API]
+    FastAPI --> OpenAI["Embedding/Chat API"]
 ```
 
 ### 스택 정리
@@ -86,14 +86,14 @@ flowchart TD
     end
     subgraph API[API Layer]
         FAST[FastAPI]
-        ROUTES[REST endpoints /api/v1/*]
+        ROUTES["REST endpoints /api/v1/*"]
         DB[(SQLite)]
     end
 
     UI -->|HTTPS| ROUTES
     ROUTES --> FAST
     FAST --> DB
-    FAST --> OpenAI[(OpenAI API)]
+    FAST --> OpenAI[("OpenAI API")]
 ```
 
 ### API 엔드포인트

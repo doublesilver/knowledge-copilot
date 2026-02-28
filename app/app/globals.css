@@ -47,6 +47,15 @@ select {
   border: 1px solid #b9c6db;
   border-radius: 8px;
   padding: 0.65rem;
+  transition: border-color 0.15s, outline-color 0.15s;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #3b82f6;
+  outline: 2px solid #3b82f6;
+  outline-offset: -1px;
 }
 
 button {
@@ -56,6 +65,25 @@ button {
   border-radius: 8px;
   padding: 0.65rem 1rem;
   cursor: pointer;
+  transition: background 0.15s;
+}
+
+button:hover {
+  background: #1e40af;
+}
+
+button:active {
+  background: #1e3a8a;
+}
+
+button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+button:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
 }
 
 pre {
@@ -64,4 +92,12 @@ pre {
   color: #e5edff;
   padding: 0.75rem;
   border-radius: 10px;
+}
+
+.message {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
 }
