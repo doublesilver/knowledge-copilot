@@ -79,6 +79,10 @@ jobs:
             --confirm \
             --token "$VERCEL_TOKEN"
 
+      - name: Write .env.production
+        working-directory: app
+        run: echo "NEXT_PUBLIC_API_BASE=${{ secrets.NEXT_PUBLIC_API_BASE_DEV }}" > .env.production
+
       - name: Deploy frontend (Vercel)
         working-directory: app
         env:
@@ -88,8 +92,7 @@ jobs:
           attempt=1
           max_attempts=3
           while :; do
-            if vercel deploy --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" \
-              -e NEXT_PUBLIC_API_BASE="${{ secrets.NEXT_PUBLIC_API_BASE_DEV }}"; then
+            if vercel deploy --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE"; then
               break
             fi
 
@@ -139,6 +142,10 @@ jobs:
             --confirm \
             --token "$VERCEL_TOKEN"
 
+      - name: Write .env.production
+        working-directory: app
+        run: echo "NEXT_PUBLIC_API_BASE=${{ secrets.NEXT_PUBLIC_API_BASE_PROD }}" > .env.production
+
       - name: Deploy frontend (Vercel)
         working-directory: app
         env:
@@ -148,8 +155,7 @@ jobs:
           attempt=1
           max_attempts=3
           while :; do
-            if vercel deploy --prod --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" \
-              -e NEXT_PUBLIC_API_BASE="${{ secrets.NEXT_PUBLIC_API_BASE_PROD }}"; then
+            if vercel deploy --prod --confirm --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE"; then
               break
             fi
 
