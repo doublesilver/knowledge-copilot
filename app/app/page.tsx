@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import Markdown from "react-markdown";
 import { ENDPOINT, fetchApi, ApiError } from "./lib";
 
 type DocumentItem = {
@@ -43,6 +44,18 @@ function errorMessage(error: unknown): string {
   return "네트워크 오류가 발생했습니다. 잠시 후 다시 시도하세요.";
 }
 
+const SOURCE_MAX = 5000;
+
+function statusBadge(status: string) {
+  const cls =
+    status === "ready"
+      ? "badge badge-ready"
+      : status === "processing"
+        ? "badge badge-processing"
+        : "badge badge-error";
+  return <span className={cls}>{status}</span>;
+}
+
 export default function HomePage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [metrics, setMetrics] = useState<Metric | null>(null);
@@ -53,10 +66,19 @@ export default function HomePage() {
   const [actionResult, setActionResult] = useState<string>("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const sourceRef = useRef<HTMLTextAreaElement>(null);
+  const questionRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     void refreshAll();
   }, []);
+
+  function autoResize(ref: React.RefObject<HTMLTextAreaElement | null>) {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }
 
   async function refreshAll() {
     try {
@@ -145,7 +167,7 @@ export default function HomePage() {
   return (
     <main>
       <h1 id="title">Knowledge Copilot</h1>
-      <p>RAG, 액션형 AI, API 로그 추적까지 포함한 포트폴리오 프로젝트</p>
+      <p className="subtitle">RAG, 액션형 AI, API 로그 추적까지 포함한 포트폴리오 프로젝트</p>
 
       <div className="grid">
         <section className="card" aria-labelledby="upload-heading">
@@ -160,12 +182,22 @@ export default function HomePage() {
               />
             </div>
             <div className="form-field">
-              <label htmlFor="sourceText">텍스트 문서</label>
+              <label htmlFor="sourceText">
+                텍스트 문서
+                <span className="char-count">
+                  {sourceText.length} / {SOURCE_MAX}
+                </span>
+              </label>
               <textarea
+                ref={sourceRef}
                 id="sourceText"
-                rows={10}
+                rows={4}
                 value={sourceText}
-                onChange={(e) => setSourceText(e.target.value)}
+                maxLength={SOURCE_MAX}
+                onChange={(e) => {
+                  setSourceText(e.target.value);
+                  autoResize(sourceRef);
+                }}
                 placeholder="질문 답변의 근거가 될 텍스트를 넣어주세요"
               />
             </div>
@@ -181,10 +213,14 @@ export default function HomePage() {
             <div className="form-field">
               <label htmlFor="question">질문</label>
               <textarea
+                ref={questionRef}
                 id="question"
-                rows={5}
+                rows={3}
                 value={question}
-                onChange={(e) => setQuestion(e.target.value)}
+                onChange={(e) => {
+                  setQuestion(e.target.value);
+                  autoResize(questionRef);
+                }}
                 placeholder="예: 이 문서의 핵심 결론은?"
               />
             </div>
@@ -202,21 +238,27 @@ export default function HomePage() {
       {queryResult ? (
         <section className="card" aria-labelledby="result-heading">
           <h2 id="result-heading">질의 응답</h2>
-          <p>{queryResult.answer}</p>
+          <div className="answer">
+            <Markdown>{queryResult.answer}</Markdown>
+          </div>
           <dl className="meta">
             <dt>모델</dt>
-            <dd>{queryResult.model}</dd>
+            <dd><span className="badge badge-ready">{queryResult.model}</span></dd>
             <dt>지연</dt>
             <dd>{queryResult.latency_ms}ms</dd>
           </dl>
-          <h3>인용</h3>
-          <ol className="citations">
-            {queryResult.citations.map((c) => (
-              <li key={c.chunk_id}>
-                <strong>{c.document_id}</strong> {c.text}
-              </li>
-            ))}
-          </ol>
+          {queryResult.citations.length > 0 && (
+            <>
+              <h3>인용</h3>
+              <ol className="citations">
+                {queryResult.citations.map((c) => (
+                  <li key={c.chunk_id}>
+                    <strong>{c.document_id}</strong> {c.text}
+                  </li>
+                ))}
+              </ol>
+            </>
+          )}
         </section>
       ) : null}
 
@@ -246,13 +288,19 @@ export default function HomePage() {
             <dd>{metrics.avg_feedback_rating ?? "N/A"}</dd>
           </dl>
         ) : null}
-        <ul>
-          {documents.map((doc) => (
-            <li key={doc.id}>
-              {doc.filename} / {doc.status} / chunks: {doc.chunk_count}
-            </li>
-          ))}
-        </ul>
+        {documents.length === 0 ? (
+          <p className="empty">업로드된 문서가 없습니다.</p>
+        ) : (
+          <ul className="doc-list">
+            {documents.map((doc) => (
+              <li key={doc.id}>
+                <span className="doc-name">{doc.filename ?? doc.id.slice(0, 8)}</span>
+                {statusBadge(doc.status)}
+                <span className="doc-chunks">chunks: {doc.chunk_count}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </main>
   );
