@@ -7,3 +7,27 @@ export const ENDPOINT = {
   metrics: `${API_BASE}/api/v1/metrics`,
   actions: `${API_BASE}/api/v1/agent/actions`,
 };
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+export async function fetchApi<T>(
+  url: string,
+  options?: RequestInit,
+): Promise<T> {
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    throw new ApiError(
+      `${response.status} ${response.statusText}`,
+      response.status,
+    );
+  }
+  return response.json() as Promise<T>;
+}
