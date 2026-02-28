@@ -15,6 +15,7 @@ class LLMError(RuntimeError):
 
 
 _EMBED_DIM = 256
+_GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta"
 
 
 def _normalize_vector(vector: np.ndarray) -> np.ndarray:
@@ -54,26 +55,25 @@ def chunk_text(text: str, max_tokens: int = 220, overlap: int = 40) -> list[str]
 
 async def embed_text(text: str) -> list[float]:
     settings = load_settings()
-    if not settings.openai_api_key:
+    if not settings.gemini_api_key:
         return _local_embed(text)
 
-    endpoint = "https://api.openai.com/v1/embeddings"
+    endpoint = f"{_GEMINI_BASE}/models/{settings.embedding_model}:embedContent"
     headers = {
-        "Authorization": f"Bearer {settings.openai_api_key}",
+        "x-goog-api-key": settings.gemini_api_key,
         "Content-Type": "application/json",
     }
     payload = {
-        "input": text,
-        "model": settings.embedding_model,
+        "model": f"models/{settings.embedding_model}",
+        "content": {"parts": [{"text": text}]},
     }
     try:
-        async with httpx.AsyncClient(timeout=settings.openai_timeout) as client:
+        async with httpx.AsyncClient(timeout=settings.api_timeout) as client:
             response = await client.post(endpoint, json=payload, headers=headers)
             response.raise_for_status()
             data = response.json()
-            return data["data"][0]["embedding"]
+            return data["embedding"]["values"]
     except Exception:
-        # fallback to local mode if provider call is unavailable
         return _local_embed(text)
 
 
@@ -112,7 +112,7 @@ def build_prompt(question: str, context_chunks: list[dict[str, Any]]) -> str:
 
 async def generate_answer(question: str, context_chunks: list[dict[str, Any]], model: str | None = None) -> tuple[str, int, str]:
     settings = load_settings()
-    if not settings.openai_api_key:
+    if not settings.gemini_api_key:
         if not context_chunks:
             return (
                 "현재 API 키가 없어 데모 모드로 동작 중입니다. 먼저 참고 문서를 업로드하면 키워드 기반 응답을 제공합니다.",
@@ -127,29 +127,32 @@ async def generate_answer(question: str, context_chunks: list[dict[str, Any]], m
             "local-fallback",
         )
 
-    endpoint = "https://api.openai.com/v1/chat/completions"
+    selected_model = model or settings.chat_model
+    endpoint = f"{_GEMINI_BASE}/models/{selected_model}:generateContent"
     headers = {
-        "Authorization": f"Bearer {settings.openai_api_key}",
+        "x-goog-api-key": settings.gemini_api_key,
         "Content-Type": "application/json",
     }
-    selected_model = model or settings.chat_model
     prompt = build_prompt(question, context_chunks)
     payload = {
-        "model": selected_model,
-        "messages": [
-            {"role": "system", "content": "You are a practical engineering assistant."},
-            {"role": "user", "content": prompt},
+        "systemInstruction": {
+            "parts": [{"text": "You are a practical engineering assistant."}],
+        },
+        "contents": [
+            {"role": "user", "parts": [{"text": prompt}]},
         ],
-        "temperature": 0.2,
+        "generationConfig": {
+            "temperature": 0.2,
+        },
     }
     try:
         start = time.perf_counter()
-        async with httpx.AsyncClient(timeout=settings.openai_timeout) as client:
+        async with httpx.AsyncClient(timeout=settings.api_timeout) as client:
             response = await client.post(endpoint, json=payload, headers=headers)
             response.raise_for_status()
             data = response.json()
-            answer = data["choices"][0]["message"]["content"]
-            used_tokens = int(data.get("usage", {}).get("total_tokens", 0))
+            answer = data["candidates"][0]["content"]["parts"][0]["text"]
+            used_tokens = int(data.get("usageMetadata", {}).get("totalTokenCount", 0))
             _ = time.perf_counter() - start
             return answer.strip(), used_tokens, selected_model
     except Exception as err:
